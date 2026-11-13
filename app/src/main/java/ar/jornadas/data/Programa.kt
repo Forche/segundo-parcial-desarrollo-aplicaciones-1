@@ -21,8 +21,26 @@ interface CarteleraDao {
     @Query("SELECT * FROM charlas ORDER BY dia, hora, sala")
     fun observar(): Flow<List<Charla>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun guardar(fichas: List<Charla>)
+    @Query("SELECT id FROM charlas WHERE favorita = 1")
+    suspend fun idsFavoritas(): List<String>
+
+    @Query("DELETE FROM charlas")
+    suspend fun vaciar()
+
+    @Insert
+    suspend fun insertar(fichas: List<Charla>)
+
+    /**
+     * La organización publica instantáneas completas: lo que no viene se retira.
+     * Las favoritas se leen dentro de la transacción, después de que llegó la respuesta,
+     * para respetar las marcas hechas mientras la petición estaba en curso.
+     */
+    @Transaction
+    suspend fun reemplazarPrograma(fichas: List<Charla>) {
+        val favoritas = idsFavoritas().toSet()
+        vaciar()
+        insertar(fichas.map { it.copy(favorita = it.id in favoritas) })
+    }
 
     @Query("UPDATE charlas SET favorita = NOT favorita WHERE id = :id")
     suspend fun alternar(id: String)
