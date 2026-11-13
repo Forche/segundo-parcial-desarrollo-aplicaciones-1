@@ -15,14 +15,14 @@ import ar.jornadas.data.Charla
 fun Catalogo(model: ProgramaModel, abrir: (String) -> Unit) {
     LaunchedEffect(Unit) { model.recargar() }
     val dia by model.dia.collectAsStateWithLifecycle()
-    var tema by remember { mutableStateOf("Todos") }
+    val tema by model.tema.collectAsStateWithLifecycle()
     val fichas by model.charlas.collectAsStateWithLifecycle()
     val hayEdicion by model.hayEdicion.collectAsStateWithLifecycle()
     val fallo by model.falloCarga.collectAsStateWithLifecycle()
     val cargando by model.cargando.collectAsStateWithLifecycle()
-    Selector(listOf("Ambos días", "Día 1", "Día 2"), dia) { model.dia.value = it }
-    val temas = listOf("Todos", "Android", "Datos", "Calidad")
-    Selector(temas, temas.indexOf(tema)) { tema = temas[it] }
+    Selector(listOf("Ambos días", "Día 1", "Día 2"), dia, model::elegirDia)
+    val temas = listOf(ProgramaModel.TODOS_LOS_TEMAS, "Android", "Datos", "Calidad")
+    Selector(temas, temas.indexOf(tema)) { model.elegirTema(temas[it]) }
     TextButton(onClick = model::recargar) { Text("Actualizar") }
     if (cargando) LinearProgressIndicator(Modifier.fillMaxWidth())
     val lista = fichas
@@ -34,7 +34,7 @@ fun Catalogo(model: ProgramaModel, abrir: (String) -> Unit) {
         }
         !hayEdicion -> Unit // primera descarga en curso
         lista.isEmpty() -> Text("Sin charlas programadas.")
-        else -> Grilla(lista.filter { (dia == 0 || it.dia == dia) && (tema == "Todos" || it.tema == tema) }, abrir)
+        else -> Grilla(lista.filter { (dia == 0 || it.dia == dia) && (tema == ProgramaModel.TODOS_LOS_TEMAS || it.tema == tema) }, abrir)
     }
 }
 
