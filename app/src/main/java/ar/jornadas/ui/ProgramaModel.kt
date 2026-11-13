@@ -2,14 +2,15 @@ package ar.jornadas.ui
 
 import android.app.Application
 import androidx.lifecycle.*
-import ar.jornadas.Servicios
+import ar.jornadas.JornadasApp
 import ar.jornadas.data.Charla
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class ProgramaModel(app: Application, private val estado: SavedStateHandle) : AndroidViewModel(app) {
-    private val servicios = Servicios(app)
+    private val servicios = getApplication<JornadasApp>().servicios
     val mesa = servicios.mesa
     private val repo = servicios.agenda
 
@@ -28,11 +29,20 @@ class ProgramaModel(app: Application, private val estado: SavedStateHandle) : An
 
     private val _falloCarga = MutableStateFlow(false)
     val falloCarga: StateFlow<Boolean> = _falloCarga.asStateFlow()
-    val cargando = MutableStateFlow(false)
+    private val _cargando = MutableStateFlow(false)
+    val cargando: StateFlow<Boolean> = _cargando.asStateFlow()
+    private var carga: Job? = null
 
+    /** Una por proceso: rotar o recrear la Activity no vuelve a descargar. */
+    fun cargaAutomatica() {
+        if (repo.reclamarCargaAutomatica()) recargar()
+    }
+
+    /** Si ya hay una petición en curso, los toques extra no generan otra. */
     fun recargar() {
-        viewModelScope.launch {
-            cargando.value = true
+        if (carga?.isActive == true) return
+        carga = viewModelScope.launch {
+            _cargando.value = true
             try {
                 repo.sincronizar()
                 _falloCarga.value = false
@@ -41,7 +51,7 @@ class ProgramaModel(app: Application, private val estado: SavedStateHandle) : An
             } catch (e: Exception) {
                 _falloCarga.value = true
             } finally {
-                cargando.value = false
+                _cargando.value = false
             }
         }
     }

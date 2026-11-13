@@ -14,11 +14,8 @@ class MainActivity : ComponentActivity() {
             model.mesa.disponible = intent.getBooleanExtra("servicio_disponible", true)
             intent.removeExtra("servicio_disponible")
         }
+        // Después de aplicar el extra: el interceptor lee la disponibilidad al comenzar la petición.
+        model.cargaAutomatica()
         setContent { Portada(model) }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        model.recargar()
     }
 }

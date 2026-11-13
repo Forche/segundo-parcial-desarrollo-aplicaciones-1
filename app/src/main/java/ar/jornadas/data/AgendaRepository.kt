@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import java.util.concurrent.atomic.AtomicBoolean
 
 class AgendaRepository(
     private val api: ProgramaApi,
@@ -31,6 +32,11 @@ class AgendaRepository(
     }
 
     suspend fun cambiarFavorita(id: String) = dao.alternar(id)
+
+    private val cargaAutomaticaHecha = AtomicBoolean(false)
+
+    /** true sólo la primera vez en el proceso: el repositorio vive lo que vive el proceso. */
+    fun reclamarCargaAutomatica(): Boolean = cargaAutomaticaHecha.compareAndSet(false, true)
 
     private companion object {
         const val CLAVE_EDICION = "edicion_descargada"
